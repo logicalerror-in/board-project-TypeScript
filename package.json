@@ -1,0 +1,15 @@
+{
+  "name": "board-project",
+  "version": "0.1.0",
+  "private": true,
+  "description": "A full-stack board project built with React, TypeScript, NestJS, Prisma, and SQLite.",
+  "scripts": {
+    "check:env": "node -v && pnpm -v",
+    "dev": "echo \"Web and API apps will be added in the next steps.\"",
+    "dev:web": "pnpm --filter web dev",
+    "dev:api": "pnpm --filter api start:dev"
+  },
+  "engines": {
+    "node": ">=24 <25"
+  }
+}
