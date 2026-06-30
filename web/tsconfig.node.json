@@ -8,6 +8,7 @@
 
     /* Bundler mode */
     "module": "esnext",
+    "moduleResolution": "Bundler",
     "allowImportingTsExtensions": true,
     "verbatimModuleSyntax": true,
     "moduleDetection": "force",
