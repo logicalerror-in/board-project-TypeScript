@@ -4,7 +4,7 @@ type HealthResponse = {
   status: 'ok';
 };
 
-@Controller('health')
+@Controller('api/health')
 export class HealthController {
   @Get()
   getHealth(): HealthResponse {
