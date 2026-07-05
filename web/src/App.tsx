@@ -2,26 +2,39 @@ import { useEffect, useState } from "react";
 
 import {
   createPost,
+  deletePost,
   getPost,
   getPosts,
+  updatePost,
 } from "./api/postsApi";
 import type {
   CreatePostRequest,
   PostDetailResponse,
   PostListItemResponse,
+  UpdatePostRequest,
 } from "./types/posts";
 
 function App() {
   const [posts, setPosts] = useState<PostListItemResponse[]>([]);
   const [selectedPost, setSelectedPost] =
     useState<PostDetailResponse | null>(null);
-  const [form, setForm] = useState<CreatePostRequest>({
+
+  const [createForm, setCreateForm] = useState<CreatePostRequest>({
     title: "",
     content: "",
   });
+
+  const [editForm, setEditForm] = useState<UpdatePostRequest>({
+    title: "",
+    content: "",
+  });
+
   const [isLoadingPosts, setIsLoadingPosts] = useState(true);
   const [isLoadingDetail, setIsLoadingDetail] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSubmittingCreate, setIsSubmittingCreate] = useState(false);
+  const [isSubmittingEdit, setIsSubmittingEdit] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
   const [message, setMessage] = useState("");
 
   async function loadPosts() {
@@ -33,15 +46,24 @@ function App() {
 
       setPosts(data);
 
-      setSelectedPost((currentSelectedPost) => {
-        if (currentSelectedPost === null) {
-          return null;
-        }
+      const refreshedSelectedPost =
+        selectedPost === null
+          ? null
+          : data.find((post) => post.id === selectedPost.id) ?? null;
 
-        return (
-          data.find((post) => post.id === currentSelectedPost.id) ?? null
-        );
-      });
+      setSelectedPost(refreshedSelectedPost);
+
+      if (refreshedSelectedPost === null) {
+        setEditForm({
+          title: "",
+          content: "",
+        });
+      } else {
+        setEditForm({
+          title: refreshedSelectedPost.title,
+          content: refreshedSelectedPost.content,
+        });
+      }
     } catch (error) {
       setMessage(
         error instanceof Error
@@ -61,6 +83,10 @@ function App() {
       const data = await getPost(postId);
 
       setSelectedPost(data);
+      setEditForm({
+        title: data.title,
+        content: data.content,
+      });
     } catch (error) {
       setMessage(
         error instanceof Error
@@ -73,15 +99,15 @@ function App() {
   }
 
   async function submitCreatePost() {
-    const title = form.title.trim();
-    const content = form.content.trim();
+    const title = createForm.title.trim();
+    const content = createForm.content.trim();
 
     if (title.length === 0 || content.length === 0) {
       setMessage("제목과 내용을 모두 입력해주세요.");
       return;
     }
 
-    setIsSubmitting(true);
+    setIsSubmittingCreate(true);
     setMessage("");
 
     try {
@@ -90,9 +116,13 @@ function App() {
         content,
       });
 
-      setForm({
+      setCreateForm({
         title: "",
         content: "",
+      });
+      setEditForm({
+        title: createdPost.title,
+        content: createdPost.content,
       });
       setSelectedPost(createdPost);
       setPosts((currentPosts) => [createdPost, ...currentPosts]);
@@ -104,7 +134,92 @@ function App() {
           : "게시글을 생성하지 못했습니다.",
       );
     } finally {
-      setIsSubmitting(false);
+      setIsSubmittingCreate(false);
+    }
+  }
+
+  async function submitUpdatePost() {
+    if (selectedPost === null) {
+      setMessage("수정할 게시글을 먼저 선택해주세요.");
+      return;
+    }
+
+    const title = editForm.title?.trim() ?? "";
+    const content = editForm.content?.trim() ?? "";
+
+    if (title.length === 0 && content.length === 0) {
+      setMessage("수정할 제목 또는 내용을 입력해주세요.");
+      return;
+    }
+
+    setIsSubmittingEdit(true);
+    setMessage("");
+
+    try {
+      const updatedPost = await updatePost(selectedPost.id, {
+        title,
+        content,
+      });
+
+      setSelectedPost(updatedPost);
+      setEditForm({
+        title: updatedPost.title,
+        content: updatedPost.content,
+      });
+
+      setPosts((currentPosts) =>
+        currentPosts.map((post) =>
+          post.id === updatedPost.id ? updatedPost : post,
+        ),
+      );
+
+      setMessage("게시글이 수정되었습니다.");
+    } catch (error) {
+      setMessage(
+        error instanceof Error
+          ? error.message
+          : "게시글을 수정하지 못했습니다.",
+      );
+    } finally {
+      setIsSubmittingEdit(false);
+    }
+  }
+
+  async function submitDeletePost() {
+    if (selectedPost === null) {
+      setMessage("삭제할 게시글을 먼저 선택해주세요.");
+      return;
+    }
+
+    const shouldDelete = window.confirm("정말 이 게시글을 삭제할까요?");
+
+    if (!shouldDelete) {
+      return;
+    }
+
+    setIsDeleting(true);
+    setMessage("");
+
+    try {
+      await deletePost(selectedPost.id);
+
+      setPosts((currentPosts) =>
+        currentPosts.filter((post) => post.id !== selectedPost.id),
+      );
+      setSelectedPost(null);
+      setEditForm({
+        title: "",
+        content: "",
+      });
+      setMessage("게시글이 삭제되었습니다.");
+    } catch (error) {
+      setMessage(
+        error instanceof Error
+          ? error.message
+          : "게시글을 삭제하지 못했습니다.",
+      );
+    } finally {
+      setIsDeleting(false);
     }
   }
 
@@ -146,11 +261,11 @@ function App() {
         <header className="mb-8">
           <p className="text-sm font-semibold text-blue-600">Board Project</p>
           <h1 className="mt-2 text-3xl font-bold tracking-tight">
-            게시글 목록 / 상세 / 생성
+            게시글 목록 / 상세 / 생성 / 수정 / 삭제
           </h1>
           <p className="mt-3 text-base text-slate-600">
-            React에서 NestJS Posts API를 호출해 게시글 데이터를 화면에
-            표시합니다.
+            React에서 NestJS Posts API를 호출해 게시글 CRUD 흐름을
+            확인합니다.
           </p>
         </header>
 
@@ -231,16 +346,16 @@ function App() {
               >
                 <div>
                   <label
-                    htmlFor="title"
+                    htmlFor="create-title"
                     className="block text-sm font-medium text-slate-700"
                   >
                     제목
                   </label>
                   <input
-                    id="title"
-                    value={form.title}
+                    id="create-title"
+                    value={createForm.title}
                     onChange={(event) =>
-                      setForm((currentForm) => ({
+                      setCreateForm((currentForm) => ({
                         ...currentForm,
                         title: event.target.value,
                       }))
@@ -252,16 +367,16 @@ function App() {
 
                 <div>
                   <label
-                    htmlFor="content"
+                    htmlFor="create-content"
                     className="block text-sm font-medium text-slate-700"
                   >
                     내용
                   </label>
                   <textarea
-                    id="content"
-                    value={form.content}
+                    id="create-content"
+                    value={createForm.content}
                     onChange={(event) =>
-                      setForm((currentForm) => ({
+                      setCreateForm((currentForm) => ({
                         ...currentForm,
                         content: event.target.value,
                       }))
@@ -273,10 +388,10 @@ function App() {
 
                 <button
                   type="submit"
-                  disabled={isSubmitting}
+                  disabled={isSubmittingCreate}
                   className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300"
                 >
-                  {isSubmitting ? "생성 중..." : "게시글 생성"}
+                  {isSubmittingCreate ? "생성 중..." : "게시글 생성"}
                 </button>
               </form>
             </section>
@@ -322,6 +437,84 @@ function App() {
                 </article>
               )}
             </section>
+
+            {selectedPost !== null && (
+              <section className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
+                <h2 className="text-xl font-bold">게시글 수정 / 삭제</h2>
+                <p className="mt-1 text-sm text-slate-500">
+                  API: PATCH /api/posts/:postId, DELETE /api/posts/:postId
+                </p>
+
+                <form
+                  className="mt-5 space-y-4"
+                  onSubmit={(event) => {
+                    event.preventDefault();
+                    void submitUpdatePost();
+                  }}
+                >
+                  <div>
+                    <label
+                      htmlFor="edit-title"
+                      className="block text-sm font-medium text-slate-700"
+                    >
+                      제목
+                    </label>
+                    <input
+                      id="edit-title"
+                      value={editForm.title ?? ""}
+                      onChange={(event) =>
+                        setEditForm((currentForm) => ({
+                          ...currentForm,
+                          title: event.target.value,
+                        }))
+                      }
+                      className="mt-2 w-full rounded-lg border border-slate-300 px-3 py-2 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                      placeholder="수정할 제목을 입력하세요"
+                    />
+                  </div>
+
+                  <div>
+                    <label
+                      htmlFor="edit-content"
+                      className="block text-sm font-medium text-slate-700"
+                    >
+                      내용
+                    </label>
+                    <textarea
+                      id="edit-content"
+                      value={editForm.content ?? ""}
+                      onChange={(event) =>
+                        setEditForm((currentForm) => ({
+                          ...currentForm,
+                          content: event.target.value,
+                        }))
+                      }
+                      className="mt-2 min-h-36 w-full rounded-lg border border-slate-300 px-3 py-2 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                      placeholder="수정할 내용을 입력하세요"
+                    />
+                  </div>
+
+                  <div className="flex flex-wrap gap-3">
+                    <button
+                      type="submit"
+                      disabled={isSubmittingEdit || isDeleting}
+                      className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300"
+                    >
+                      {isSubmittingEdit ? "수정 중..." : "게시글 수정"}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => void submitDeletePost()}
+                      disabled={isSubmittingEdit || isDeleting}
+                      className="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700 disabled:cursor-not-allowed disabled:bg-red-300"
+                    >
+                      {isDeleting ? "삭제 중..." : "게시글 삭제"}
+                    </button>
+                  </div>
+                </form>
+              </section>
+            )}
           </div>
         </div>
       </section>

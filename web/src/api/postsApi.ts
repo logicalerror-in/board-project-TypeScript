@@ -43,7 +43,7 @@ export const createPost =
     return readJson<PostDetailResponse>(response);
   };
 
-export const update =
+export const updatePost =
   async (postId: number, request: UpdatePostRequest): Promise<PostDetailResponse> => {
     const response = await fetch(`/api/posts/${postId}`, {
       method: 'PATCH',
