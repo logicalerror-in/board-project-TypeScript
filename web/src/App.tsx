@@ -1,32 +1,21 @@
 import { useEffect, useState } from "react";
 
-type Post = {
-  id: number;
-  title: string;
-  content: string;
-  createdAt: string;
-  updatedAt: string;
-};
-
-type CreatePostForm = {
-  title: string;
-  content: string;
-};
-
-async function requestPosts(): Promise<Post[]> {
-  const response = await fetch("/api/posts");
-
-  if (!response.ok) {
-    throw new Error(`게시글 목록 조회 실패: ${response.status}`);
-  }
-
-  return (await response.json()) as Post[];
-}
+import {
+  createPost,
+  getPost,
+  getPosts,
+} from "./api/postsApi";
+import type {
+  CreatePostRequest,
+  PostDetailResponse,
+  PostListItemResponse,
+} from "./types/posts";
 
 function App() {
-  const [posts, setPosts] = useState<Post[]>([]);
-  const [selectedPost, setSelectedPost] = useState<Post | null>(null);
-  const [form, setForm] = useState<CreatePostForm>({
+  const [posts, setPosts] = useState<PostListItemResponse[]>([]);
+  const [selectedPost, setSelectedPost] =
+    useState<PostDetailResponse | null>(null);
+  const [form, setForm] = useState<CreatePostRequest>({
     title: "",
     content: "",
   });
@@ -40,7 +29,7 @@ function App() {
     setMessage("");
 
     try {
-      const data = await requestPosts();
+      const data = await getPosts();
 
       setPosts(data);
 
@@ -69,13 +58,7 @@ function App() {
     setMessage("");
 
     try {
-      const response = await fetch(`/api/posts/${postId}`);
-
-      if (!response.ok) {
-        throw new Error(`게시글 상세 조회 실패: ${response.status}`);
-      }
-
-      const data = (await response.json()) as Post;
+      const data = await getPost(postId);
 
       setSelectedPost(data);
     } catch (error) {
@@ -89,7 +72,7 @@ function App() {
     }
   }
 
-  async function createPost() {
+  async function submitCreatePost() {
     const title = form.title.trim();
     const content = form.content.trim();
 
@@ -102,22 +85,10 @@ function App() {
     setMessage("");
 
     try {
-      const response = await fetch("/api/posts", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          title,
-          content,
-        }),
+      const createdPost = await createPost({
+        title,
+        content,
       });
-
-      if (!response.ok) {
-        throw new Error(`게시글 생성 실패: ${response.status}`);
-      }
-
-      const createdPost = (await response.json()) as Post;
 
       setForm({
         title: "",
@@ -142,7 +113,7 @@ function App() {
 
     async function loadInitialPosts() {
       try {
-        const data = await requestPosts();
+        const data = await getPosts();
 
         if (!ignore) {
           setPosts(data);
@@ -255,7 +226,7 @@ function App() {
                 className="mt-5 space-y-4"
                 onSubmit={(event) => {
                   event.preventDefault();
-                  void createPost();
+                  void submitCreatePost();
                 }}
               >
                 <div>
