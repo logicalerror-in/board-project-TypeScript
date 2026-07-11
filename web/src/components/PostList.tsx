@@ -1,14 +1,14 @@
 import type {PostListItemResponse} from "../types/posts";
+import {Link} from "react-router";
 
 type PostListProps = {
   posts: PostListItemResponse[];
   selectedPostId: number | null;
   isLoadingPosts: boolean;
   onRefresh: () => void;
-  onSelectPost: (postId: number) => void;
 };
 
-const PostList = ({posts, selectedPostId, isLoadingPosts, onRefresh, onSelectPost}: PostListProps) => {
+const PostList = ({posts, selectedPostId, isLoadingPosts, onRefresh}: PostListProps) => {
   return (
     <section className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
       <div className="flex items-center justify-between gap-4">
@@ -42,10 +42,9 @@ const PostList = ({posts, selectedPostId, isLoadingPosts, onRefresh, onSelectPos
 
         {!isLoadingPosts &&
           posts.map((post) => (
-            <button
+            <Link
               key={post.id}
-              type="button"
-              onClick={() => onSelectPost(post.id)}
+              to={`/posts/${post.id}`}
               className={`block w-full rounded-xl border p-4 text-left transition hover:bg-slate-50 ${
                 selectedPostId === post.id
                   ? "border-blue-300 bg-blue-50"
@@ -57,7 +56,7 @@ const PostList = ({posts, selectedPostId, isLoadingPosts, onRefresh, onSelectPos
               <p className="mt-2 line-clamp-2 text-sm text-slate-600">
                 {post.content}
               </p>
-            </button>
+            </Link>
           ))}
       </div>
     </section>

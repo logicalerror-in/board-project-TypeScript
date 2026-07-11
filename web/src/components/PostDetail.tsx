@@ -1,3 +1,5 @@
+import { Link } from "react-router";
+
 import type { PostDetailResponse } from "../types/posts";
 
 type PostDetailProps = {
@@ -21,7 +23,7 @@ const PostDetail = ({ selectedPost, isLoadingDetail }: PostDetailProps) => {
 
       {!isLoadingDetail && selectedPost === null && (
         <p className="mt-5 rounded-xl bg-slate-50 p-4 text-sm text-slate-600">
-          왼쪽 목록에서 게시글을 선택하세요.
+          게시글을 불러오지 못했거나 선택된 게시글이 없습니다.
         </p>
       )}
 
@@ -43,6 +45,21 @@ const PostDetail = ({ selectedPost, isLoadingDetail }: PostDetailProps) => {
               <dd>{selectedPost.updatedAt}</dd>
             </div>
           </dl>
+
+          <div className="mt-6 flex flex-wrap gap-3">
+            <Link
+              to={`/posts/${selectedPost.id}/edit`}
+              className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
+            >
+              수정 / 삭제
+            </Link>
+            <Link
+              to="/posts"
+              className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium hover:bg-slate-50"
+            >
+              목록으로
+            </Link>
+          </div>
         </article>
       )}
     </section>
