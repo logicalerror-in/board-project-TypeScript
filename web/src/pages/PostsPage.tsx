@@ -8,9 +8,8 @@ type PostsPageProps = {
 const PostsPage = ({ postsState }: PostsPageProps) => {
   return (
     <PostList
-      posts={postsState.posts}
+      postListState={postsState.postListState}
       selectedPostId={postsState.selectedPost?.id ?? null}
-      isLoadingPosts={postsState.isLoadingPosts}
       onRefresh={() => void postsState.loadPosts()}
     />
   );

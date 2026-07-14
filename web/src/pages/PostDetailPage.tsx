@@ -1,8 +1,8 @@
-import { useEffect } from "react";
-import { Link, useParams } from "react-router";
+import {useEffect} from "react";
+import {Link, useParams} from "react-router";
 
 import PostDetail from "../components/PostDetail";
-import type { UsePostsReturn } from "../hooks/usePosts";
+import type {UsePostsReturn} from "../hooks/usePosts";
 
 type PostDetailPageProps = {
   postsState: UsePostsReturn;
@@ -25,7 +25,7 @@ const parsePostId = (postIdParam: string | undefined) => {
 const PostDetailPage = ({ postsState }: PostDetailPageProps) => {
   const { postId: postIdParam } = useParams();
   const postId = parsePostId(postIdParam);
-  const { selectedPost, isLoadingDetail, fetchPostDetail } = postsState;
+  const { postDetailState, fetchPostDetail } = postsState;
 
   useEffect(() => {
     if (postId === null) {
@@ -52,12 +52,7 @@ const PostDetailPage = ({ postsState }: PostDetailPageProps) => {
     );
   }
 
-  return (
-    <PostDetail
-      selectedPost={selectedPost}
-      isLoadingDetail={isLoadingDetail}
-    />
-  );
+  return <PostDetail postDetailState={postDetailState} />;
 };
 
 export default PostDetailPage;
