@@ -28,9 +28,8 @@ const EditPostPage = ({ postsState }: EditPostPageProps) => {
   const postId = parsePostId(postIdParam);
 
   const {
-    selectedPost,
+    postDetailState,
     editForm,
-    isLoadingDetail,
     isSubmittingEdit,
     isDeleting,
     setEditForm,
@@ -80,7 +79,7 @@ const EditPostPage = ({ postsState }: EditPostPageProps) => {
     );
   }
 
-  if (isLoadingDetail) {
+  if (postDetailState.status === "loading") {
     return (
       <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
         <p className="rounded-xl bg-slate-50 p-4 text-sm text-slate-600">
@@ -90,12 +89,29 @@ const EditPostPage = ({ postsState }: EditPostPageProps) => {
     );
   }
 
-  if (selectedPost === null) {
+  if (postDetailState.status === "error") {
+    return (
+      <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
+        <h2 className="text-xl font-bold">수정할 게시글이 없습니다.</h2>
+        <p className="mt-2 rounded-xl bg-red-50 p-4 text-sm text-red-700">
+          {postDetailState.message}
+        </p>
+        <Link
+          to="/posts"
+          className="mt-4 inline-flex rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
+        >
+          게시글 목록으로 이동
+        </Link>
+      </div>
+    );
+  }
+
+  if (postDetailState.status !== "success") {
     return (
       <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
         <h2 className="text-xl font-bold">수정할 게시글이 없습니다.</h2>
         <p className="mt-2 text-sm text-slate-600">
-          게시글을 불러오지 못했거나 존재하지 않습니다.
+          게시글을 먼저 불러와야 합니다.
         </p>
         <Link
           to="/posts"

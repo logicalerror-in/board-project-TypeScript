@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import {useCallback, useEffect, useState} from "react";
 
 import {
   createPost,
@@ -13,11 +13,20 @@ import type {
   PostListItemResponse,
   UpdatePostRequest,
 } from "../types/posts";
+import type {ApiState} from "../api/apiState.ts";
 
 export const usePosts = () => {
-  const [posts, setPosts] = useState<PostListItemResponse[]>([]);
-  const [selectedPost, setSelectedPost] =
-    useState<PostDetailResponse | null>(null);
+  const [postListState, setPostListState] = useState<
+    ApiState<PostListItemResponse[]>
+  >({
+    status: "loading",
+  });
+
+  const [postDetailState, setPostDetailState] = useState<
+    ApiState<PostDetailResponse>
+  >({
+    status: "idle",
+  });
 
   const [createForm, setCreateForm] = useState<CreatePostRequest>({
     title: "",
@@ -29,13 +38,17 @@ export const usePosts = () => {
     content: "",
   });
 
-  const [isLoadingPosts, setIsLoadingPosts] = useState(true);
-  const [isLoadingDetail, setIsLoadingDetail] = useState(false);
   const [isSubmittingCreate, setIsSubmittingCreate] = useState(false);
   const [isSubmittingEdit, setIsSubmittingEdit] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
   const [message, setMessage] = useState("");
+
+  const posts =
+    postListState.status === "success" ? postListState.data : [];
+
+  const selectedPost =
+    postDetailState.status === "success" ? postDetailState.data : null;
 
   const clearEditForm = useCallback(() => {
     setEditForm({
@@ -51,61 +64,91 @@ export const usePosts = () => {
     });
   }, []);
 
+  const getErrorMessage = useCallback(
+    (error: unknown, fallbackMessage: string) => {
+      return error instanceof Error ? error.message : fallbackMessage;
+    },
+    [],
+  );
+
   const loadPosts = async () => {
-    setIsLoadingPosts(true);
+    setPostListState({
+      status: "loading",
+    });
     setMessage("");
 
     try {
       const data = await getPosts();
 
-      setPosts(data);
+      setPostListState({
+        status: "success",
+        data,
+      });
+
+      if (postDetailState.status !== "success") {
+        return;
+      }
 
       const refreshedSelectedPost =
-        selectedPost === null
-          ? null
-          : data.find((post) => post.id === selectedPost.id) ?? null;
-
-      setSelectedPost(refreshedSelectedPost);
+        data.find((post) => post.id === postDetailState.data.id) ?? null;
 
       if (refreshedSelectedPost === null) {
+        setPostDetailState({
+          status: "idle",
+        });
         clearEditForm();
-      } else {
-        syncEditFormWithPost(refreshedSelectedPost);
+        return;
       }
+
+      setPostDetailState({
+        status: "success",
+        data: refreshedSelectedPost,
+      });
+      syncEditFormWithPost(refreshedSelectedPost);
     } catch (error) {
-      setMessage(
-        error instanceof Error
-          ? error.message
-          : "게시글 목록을 불러오지 못했습니다.",
+      const errorMessage = getErrorMessage(
+        error,
+        "게시글 목록을 불러오지 못했습니다.",
       );
-    } finally {
-      setIsLoadingPosts(false);
+
+      setPostListState({
+        status: "error",
+        message: errorMessage,
+      });
+      setMessage(errorMessage);
     }
   };
 
   const fetchPostDetail = useCallback(
     async (postId: number) => {
-      setIsLoadingDetail(true);
+      setPostDetailState({
+        status: "loading",
+      });
       setMessage("");
 
       try {
         const data = await getPost(postId);
 
-        setSelectedPost(data);
+        setPostDetailState({
+          status: "success",
+          data,
+        });
         syncEditFormWithPost(data);
       } catch (error) {
-        setSelectedPost(null);
-        clearEditForm();
-        setMessage(
-          error instanceof Error
-            ? error.message
-            : "게시글 상세를 불러오지 못했습니다.",
+        const errorMessage = getErrorMessage(
+          error,
+          "게시글 상세를 불러오지 못했습니다.",
         );
-      } finally {
-        setIsLoadingDetail(false);
+
+        setPostDetailState({
+          status: "error",
+          message: errorMessage,
+        });
+        clearEditForm();
+        setMessage(errorMessage);
       }
     },
-    [clearEditForm, syncEditFormWithPost],
+    [clearEditForm, getErrorMessage, syncEditFormWithPost],
   );
 
   const submitCreatePost = async () => {
@@ -131,16 +174,32 @@ export const usePosts = () => {
         content: "",
       });
       syncEditFormWithPost(createdPost);
-      setSelectedPost(createdPost);
-      setPosts((currentPosts) => [createdPost, ...currentPosts]);
+
+      setPostDetailState({
+        status: "success",
+        data: createdPost,
+      });
+
+      setPostListState((currentState) => {
+        if (currentState.status !== "success") {
+          return {
+            status: "success",
+            data: [createdPost],
+          };
+        }
+
+        return {
+          status: "success",
+          data: [createdPost, ...currentState.data],
+        };
+      });
+
       setMessage("게시글이 생성되었습니다.");
 
       return createdPost;
     } catch (error) {
       setMessage(
-        error instanceof Error
-          ? error.message
-          : "게시글을 생성하지 못했습니다.",
+        getErrorMessage(error, "게시글을 생성하지 못했습니다."),
       );
 
       return null;
@@ -158,7 +217,7 @@ export const usePosts = () => {
     const title = editForm.title?.trim() ?? "";
     const content = editForm.content?.trim() ?? "";
 
-    if (title.length === 0 && content.length === 0) {
+    if (title.length === 0 || content.length === 0) {
       setMessage("수정할 제목 또는 내용을 입력해주세요.");
       return null;
     }
@@ -172,23 +231,31 @@ export const usePosts = () => {
         content,
       });
 
-      setSelectedPost(updatedPost);
+      setPostDetailState({
+        status: "success",
+        data: updatedPost,
+      });
       syncEditFormWithPost(updatedPost);
 
-      setPosts((currentPosts) =>
-        currentPosts.map((post) =>
-          post.id === updatedPost.id ? updatedPost : post,
-        ),
-      );
+      setPostListState((currentState) => {
+        if (currentState.status !== "success") {
+          return currentState;
+        }
+
+        return {
+          status: "success",
+          data: currentState.data.map((post) =>
+            post.id === updatedPost.id ? updatedPost : post,
+          ),
+        };
+      });
 
       setMessage("게시글이 수정되었습니다.");
 
       return updatedPost;
     } catch (error) {
       setMessage(
-        error instanceof Error
-          ? error.message
-          : "게시글을 수정하지 못했습니다.",
+        getErrorMessage(error, "게시글을 수정하지 못했습니다."),
       );
 
       return null;
@@ -209,25 +276,37 @@ export const usePosts = () => {
       return false;
     }
 
+    const postIdToDelete = selectedPost.id;
+
     setIsDeleting(true);
     setMessage("");
 
     try {
-      await deletePost(selectedPost.id);
+      await deletePost(postIdToDelete);
 
-      setPosts((currentPosts) =>
-        currentPosts.filter((post) => post.id !== selectedPost.id),
-      );
-      setSelectedPost(null);
+      setPostListState((currentState) => {
+        if (currentState.status !== "success") {
+          return currentState;
+        }
+
+        return {
+          status: "success",
+          data: currentState.data.filter(
+            (post) => post.id !== postIdToDelete,
+          ),
+        };
+      });
+
+      setPostDetailState({
+        status: "idle",
+      });
       clearEditForm();
       setMessage("게시글이 삭제되었습니다.");
 
       return true;
     } catch (error) {
       setMessage(
-        error instanceof Error
-          ? error.message
-          : "게시글을 삭제하지 못했습니다.",
+        getErrorMessage(error, "게시글을 삭제하지 못했습니다."),
       );
 
       return false;
@@ -240,23 +319,31 @@ export const usePosts = () => {
     let ignore = false;
 
     const loadInitialPosts = async () => {
+      setPostListState({
+        status: "loading",
+      });
+
       try {
         const data = await getPosts();
 
         if (!ignore) {
-          setPosts(data);
+          setPostListState({
+            status: "success",
+            data,
+          });
         }
       } catch (error) {
         if (!ignore) {
-          setMessage(
-            error instanceof Error
-              ? error.message
-              : "게시글 목록을 불러오지 못했습니다.",
+          const errorMessage = getErrorMessage(
+            error,
+            "게시글 목록을 불러오지 못했습니다.",
           );
-        }
-      } finally {
-        if (!ignore) {
-          setIsLoadingPosts(false);
+
+          setPostListState({
+            status: "error",
+            message: errorMessage,
+          });
+          setMessage(errorMessage);
         }
       }
     };
@@ -266,15 +353,15 @@ export const usePosts = () => {
     return () => {
       ignore = true;
     };
-  }, []);
+  }, [getErrorMessage]);
 
   return {
+    postListState,
+    postDetailState,
     posts,
     selectedPost,
     createForm,
     editForm,
-    isLoadingPosts,
-    isLoadingDetail,
     isSubmittingCreate,
     isSubmittingEdit,
     isDeleting,
