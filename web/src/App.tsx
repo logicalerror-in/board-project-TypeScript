@@ -45,7 +45,10 @@ const App = () => {
         <MessageBox message={postsState.message} />
 
         <Routes>
-          <Route path="/" element={<Navigate to="/posts" replace />} />
+          <Route
+            path="/"
+            element={<Navigate to="/posts" replace />}
+          />
           <Route
             path="/posts"
             element={<PostsPage postsState={postsState} />}
