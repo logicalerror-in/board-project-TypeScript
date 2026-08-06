@@ -179,3 +179,70 @@ TypeScript 타입은 런타임에 사라집니다.
 현재는 작동 흐름을 먼저 확인하기 위해 일부 타입 검증을 단순화했습니다.
 
 API response 검증, unknown, type guard, 공통 error response는 다음 개선 단계에서 정리합니다.
+
+
+## 라우트 기준 데이터 조회 책임
+
+현재 프론트엔드는 `App.tsx`에서 `usePosts()`를 한 번 호출하고, 그 결과를 각 page component에 전달한다.
+
+이 구조는 Phase 14 학습을 위한 중간 구조다.
+
+### 현재 구조
+
+- `/posts`
+    - 게시글 목록 화면
+    - `postListState`를 사용한다.
+    - 새로고침 시 `loadPosts()`를 호출한다.
+
+- `/posts/:postId`
+    - 게시글 상세 화면
+    - URL parameter의 `postId`를 number로 변환/검증한다.
+    - 유효한 postId이면 `fetchPostDetail(postId)`를 호출한다.
+
+- `/posts/:postId/edit`
+    - 게시글 수정/삭제 화면
+    - URL parameter의 `postId`를 number로 변환/검증한다.
+    - 유효한 postId이면 `fetchPostDetail(postId)`를 호출해 수정 대상 데이터를 불러온다.
+
+### create/update/delete 이후 상태 갱신 기준
+
+현재 Phase 14에서는 생성/수정/삭제 성공 후 서버 응답을 이용해 React state를 직접 갱신한다.
+
+- create 성공
+    - 생성된 게시글을 목록 state에 추가한다.
+    - 생성된 게시글을 상세 state로 설정한다.
+
+- update 성공
+    - 수정된 게시글을 상세 state로 설정한다.
+    - 목록 state에서 같은 id의 게시글을 교체한다.
+
+- delete 성공
+    - 목록 state에서 삭제된 게시글을 제거한다.
+    - 상세 state를 idle로 되돌린다.
+
+이 방식은 React state 변경과 렌더링 흐름을 학습하기 위한 방식이다.
+
+실무에서는 다중 사용자 변경, 서버 정렬, pagination, filter, search가 있는 경우 mutation 이후 목록/상세 데이터를 다시 fetch하는 방식이 더 안전할 수 있다.
+
+### TanStack Query 도입 여부
+
+Phase 14에서는 TanStack Query를 도입하지 않는다.
+
+이유는 다음과 같다.
+
+- 직접 `fetch` 흐름을 이해한다.
+- `response.ok`, `response.json()`, `unknown`, type guard를 직접 다룬다.
+- loading/error/success 상태를 직접 관리한다.
+- custom hook이 어떤 문제를 해결하는지 직접 경험한다.
+- 서버 상태 관리가 왜 어려운지 이해한 뒤, 필요할 때 별도 학습 주제로 다룬다.
+
+따라서 Phase 14의 서버 데이터 관리는 다음 구조를 유지한다.
+
+```txt
+page/component
+→ usePosts custom hook
+→ postsApi.ts
+→ fetch
+→ NestJS API
+```
+
