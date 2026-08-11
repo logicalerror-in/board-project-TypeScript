@@ -21,8 +21,11 @@ const NewPostPage = ({ postsState }: NewPostPageProps) => {
   return (
     <PostCreateForm
       form={postsState.createForm}
-      isSubmittingCreate={postsState.isSubmittingCreate}
-      onChangeForm={postsState.setCreateForm}
+      errors={postsState.createFormErrors}
+      isSubmittingCreate={
+        postsState.isSubmittingCreate
+      }
+      onChangeForm={postsState.changeCreateForm}
       onSubmit={() => void handleSubmit()}
     />
   );

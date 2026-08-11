@@ -1,7 +1,9 @@
-import type { UpdatePostRequest } from "../types/posts";
+import type {UpdatePostRequest} from "../types/posts";
+import type {PostFormErrors} from "../validation/postsValidation.ts";
 
 type PostEditFormProps = {
   form: UpdatePostRequest;
+  errors: PostFormErrors;
   isSubmittingEdit: boolean;
   isDeleting: boolean;
   onChangeForm: (form: UpdatePostRequest) => void;
@@ -11,6 +13,7 @@ type PostEditFormProps = {
 
 const PostEditForm = ({
                         form,
+                        errors,
                         isSubmittingEdit,
                         isDeleting,
                         onChangeForm,
@@ -47,9 +50,23 @@ const PostEditForm = ({
                 title: event.target.value,
               })
             }
+            aria-invalid={errors.title !== undefined}
+            aria-describedby={
+              errors.title !== undefined
+                ? "edit-title-error"
+                : undefined
+            }
             className="mt-2 w-full rounded-lg border border-slate-300 px-3 py-2 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
             placeholder="수정할 제목을 입력하세요"
           />
+          {errors.title !== undefined && (
+            <p
+              id="edit-title-error"
+              className="mt-2 text-sm text-red-600"
+            >
+              {errors.title}
+            </p>
+          )}
         </div>
 
         <div>
@@ -68,9 +85,23 @@ const PostEditForm = ({
                 content: event.target.value,
               })
             }
+            aria-invalid={errors.content !== undefined}
+            aria-describedby={
+              errors.content !== undefined
+                ? "edit-content-error"
+                : undefined
+            }
             className="mt-2 min-h-36 w-full rounded-lg border border-slate-300 px-3 py-2 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
             placeholder="수정할 내용을 입력하세요"
           />
+          {errors.content !== undefined && (
+            <p
+              id="edit-content-error"
+              className="mt-2 text-sm text-red-600"
+            >
+              {errors.content}
+            </p>
+          )}
         </div>
 
         <div className="flex flex-wrap gap-3">
