@@ -14,6 +14,12 @@ import type {
   UpdatePostRequest,
 } from "../types/posts";
 import type {ApiState} from "../api/apiState.ts";
+import {
+  hasPostFormErrors,
+  type PostFormErrors,
+  validateCreatePostForm,
+  validateUpdatePostForm
+} from "../validation/postsValidation.ts";
 
 export const usePosts = () => {
   const [postListState, setPostListState] = useState<
@@ -38,6 +44,12 @@ export const usePosts = () => {
     content: "",
   });
 
+  const [createFormErrors, setCreateFormErrors] =
+    useState<PostFormErrors>({});
+
+  const [editFormErrors, setEditFormErrors] =
+    useState<PostFormErrors>({});
+
   const [isSubmittingCreate, setIsSubmittingCreate] = useState(false);
   const [isSubmittingEdit, setIsSubmittingEdit] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -48,25 +60,52 @@ export const usePosts = () => {
     postListState.status === "success" ? postListState.data : [];
 
   const selectedPost =
-    postDetailState.status === "success" ? postDetailState.data : null;
+    postDetailState.status === "success"
+      ? postDetailState.data
+      : null;
+
+  const getErrorMessage = useCallback(
+    (error: unknown, fallbackMessage: string) => {
+      return error instanceof Error
+        ? error.message
+        : fallbackMessage;
+    },
+    [],
+  );
 
   const clearEditForm = useCallback(() => {
     setEditForm({
       title: "",
       content: "",
     });
+
+    setEditFormErrors({});
   }, []);
 
-  const syncEditFormWithPost = useCallback((post: PostDetailResponse) => {
-    setEditForm({
-      title: post.title,
-      content: post.content,
-    });
-  }, []);
+  const syncEditFormWithPost = useCallback(
+    (post: PostDetailResponse) => {
+      setEditForm({
+        title: post.title,
+        content: post.content,
+      });
 
-  const getErrorMessage = useCallback(
-    (error: unknown, fallbackMessage: string) => {
-      return error instanceof Error ? error.message : fallbackMessage;
+      setEditFormErrors({});
+    },
+    [],
+  );
+
+  const changeCreateForm = useCallback(
+    (form: CreatePostRequest) => {
+      setCreateForm(form);
+      setCreateFormErrors({});
+    },
+    [],
+  );
+
+  const changeEditForm = useCallback(
+    (form: UpdatePostRequest) => {
+      setEditForm(form);
+      setEditFormErrors({});
     },
     [],
   );
@@ -90,7 +129,9 @@ export const usePosts = () => {
       }
 
       const refreshedSelectedPost =
-        data.find((post) => post.id === postDetailState.data.id) ?? null;
+        data.find(
+          (post) => post.id === postDetailState.data.id,
+        ) ?? null;
 
       if (refreshedSelectedPost === null) {
         setPostDetailState({
@@ -148,31 +189,40 @@ export const usePosts = () => {
         setMessage(errorMessage);
       }
     },
-    [clearEditForm, getErrorMessage, syncEditFormWithPost],
+    [
+      clearEditForm,
+      getErrorMessage,
+      syncEditFormWithPost,
+    ],
   );
 
   const submitCreatePost = async () => {
-    const title = createForm.title.trim();
-    const content = createForm.content.trim();
+    const validationErrors =
+      validateCreatePostForm(createForm);
 
-    if (title.length === 0 || content.length === 0) {
-      setMessage("제목과 내용을 모두 입력해주세요.");
+    setCreateFormErrors(validationErrors);
+
+    if (hasPostFormErrors(validationErrors)) {
       return null;
     }
+
+    const request: CreatePostRequest = {
+      title: createForm.title.trim(),
+      content: createForm.content.trim(),
+    };
 
     setIsSubmittingCreate(true);
     setMessage("");
 
     try {
-      const createdPost = await createPost({
-        title,
-        content,
-      });
+      const createdPost = await createPost(request);
 
       setCreateForm({
         title: "",
         content: "",
       });
+      setCreateFormErrors({});
+
       syncEditFormWithPost(createdPost);
 
       setPostDetailState({
@@ -199,7 +249,10 @@ export const usePosts = () => {
       return createdPost;
     } catch (error) {
       setMessage(
-        getErrorMessage(error, "게시글을 생성하지 못했습니다."),
+        getErrorMessage(
+          error,
+          "게시글을 생성하지 못했습니다.",
+        ),
       );
 
       return null;
@@ -214,27 +267,34 @@ export const usePosts = () => {
       return null;
     }
 
-    const title = editForm.title?.trim() ?? "";
-    const content = editForm.content?.trim() ?? "";
+    const validationErrors =
+      validateUpdatePostForm(editForm);
 
-    if (title.length === 0 || content.length === 0) {
-      setMessage("수정할 제목 또는 내용을 입력해주세요.");
+    setEditFormErrors(validationErrors);
+
+    if (hasPostFormErrors(validationErrors)) {
       return null;
     }
+
+    const request: UpdatePostRequest = {
+      title: editForm.title?.trim(),
+      content: editForm.content?.trim(),
+    };
 
     setIsSubmittingEdit(true);
     setMessage("");
 
     try {
-      const updatedPost = await updatePost(selectedPost.id, {
-        title,
-        content,
-      });
+      const updatedPost = await updatePost(
+        selectedPost.id,
+        request,
+      );
 
       setPostDetailState({
         status: "success",
         data: updatedPost,
       });
+
       syncEditFormWithPost(updatedPost);
 
       setPostListState((currentState) => {
@@ -245,7 +305,9 @@ export const usePosts = () => {
         return {
           status: "success",
           data: currentState.data.map((post) =>
-            post.id === updatedPost.id ? updatedPost : post,
+            post.id === updatedPost.id
+              ? updatedPost
+              : post,
           ),
         };
       });
@@ -255,7 +317,10 @@ export const usePosts = () => {
       return updatedPost;
     } catch (error) {
       setMessage(
-        getErrorMessage(error, "게시글을 수정하지 못했습니다."),
+        getErrorMessage(
+          error,
+          "게시글을 수정하지 못했습니다.",
+        ),
       );
 
       return null;
@@ -270,7 +335,9 @@ export const usePosts = () => {
       return false;
     }
 
-    const shouldDelete = window.confirm("정말 이 게시글을 삭제할까요?");
+    const shouldDelete = window.confirm(
+      "정말 이 게시글을 삭제할까요?",
+    );
 
     if (!shouldDelete) {
       return false;
@@ -300,13 +367,17 @@ export const usePosts = () => {
       setPostDetailState({
         status: "idle",
       });
+
       clearEditForm();
       setMessage("게시글이 삭제되었습니다.");
 
       return true;
     } catch (error) {
       setMessage(
-        getErrorMessage(error, "게시글을 삭제하지 못했습니다."),
+        getErrorMessage(
+          error,
+          "게시글을 삭제하지 못했습니다.",
+        ),
       );
 
       return false;
@@ -358,16 +429,24 @@ export const usePosts = () => {
   return {
     postListState,
     postDetailState,
+
     posts,
     selectedPost,
+
     createForm,
     editForm,
+    createFormErrors,
+    editFormErrors,
+
     isSubmittingCreate,
     isSubmittingEdit,
     isDeleting,
+
     message,
-    setCreateForm,
-    setEditForm,
+
+    changeCreateForm,
+    changeEditForm,
+
     loadPosts,
     fetchPostDetail,
     submitCreatePost,

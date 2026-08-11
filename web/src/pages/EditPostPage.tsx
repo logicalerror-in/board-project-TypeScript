@@ -8,7 +8,9 @@ type EditPostPageProps = {
   postsState: UsePostsReturn;
 };
 
-const parsePostId = (postIdParam: string | undefined) => {
+const parsePostId = (
+  postIdParam: string | undefined,
+) => {
   if (postIdParam === undefined) {
     return null;
   }
@@ -22,17 +24,21 @@ const parsePostId = (postIdParam: string | undefined) => {
   return postId;
 };
 
-const EditPostPage = ({ postsState }: EditPostPageProps) => {
+const EditPostPage = ({
+                        postsState,
+                      }: EditPostPageProps) => {
   const { postId: postIdParam } = useParams();
   const navigate = useNavigate();
+
   const postId = parsePostId(postIdParam);
 
   const {
     postDetailState,
     editForm,
+    editFormErrors,
     isSubmittingEdit,
     isDeleting,
-    setEditForm,
+    changeEditForm,
     fetchPostDetail,
     submitUpdatePost,
     submitDeletePost,
@@ -65,10 +71,14 @@ const EditPostPage = ({ postsState }: EditPostPageProps) => {
   if (postId === null) {
     return (
       <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
-        <h2 className="text-xl font-bold">잘못된 게시글 주소입니다.</h2>
+        <h2 className="text-xl font-bold">
+          잘못된 게시글 주소입니다.
+        </h2>
+
         <p className="mt-2 text-sm text-slate-600">
           게시글 ID는 양의 정수여야 합니다.
         </p>
+
         <Link
           to="/posts"
           className="mt-4 inline-flex rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
@@ -92,10 +102,14 @@ const EditPostPage = ({ postsState }: EditPostPageProps) => {
   if (postDetailState.status === "error") {
     return (
       <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
-        <h2 className="text-xl font-bold">수정할 게시글이 없습니다.</h2>
+        <h2 className="text-xl font-bold">
+          수정할 게시글이 없습니다.
+        </h2>
+
         <p className="mt-2 rounded-xl bg-red-50 p-4 text-sm text-red-700">
           {postDetailState.message}
         </p>
+
         <Link
           to="/posts"
           className="mt-4 inline-flex rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
@@ -109,16 +123,9 @@ const EditPostPage = ({ postsState }: EditPostPageProps) => {
   if (postDetailState.status !== "success") {
     return (
       <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
-        <h2 className="text-xl font-bold">수정할 게시글이 없습니다.</h2>
-        <p className="mt-2 text-sm text-slate-600">
-          게시글을 먼저 불러와야 합니다.
+        <p className="text-sm text-slate-600">
+          게시글을 불러오는 중입니다.
         </p>
-        <Link
-          to="/posts"
-          className="mt-4 inline-flex rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
-        >
-          게시글 목록으로 이동
-        </Link>
       </div>
     );
   }
@@ -126,11 +133,16 @@ const EditPostPage = ({ postsState }: EditPostPageProps) => {
   return (
     <PostEditForm
       form={editForm}
+      errors={editFormErrors}
       isSubmittingEdit={isSubmittingEdit}
       isDeleting={isDeleting}
-      onChangeForm={setEditForm}
-      onSubmitUpdate={() => void handleSubmitUpdate()}
-      onSubmitDelete={() => void handleSubmitDelete()}
+      onChangeForm={changeEditForm}
+      onSubmitUpdate={() =>
+        void handleSubmitUpdate()
+      }
+      onSubmitDelete={() =>
+        void handleSubmitDelete()
+      }
     />
   );
 };
