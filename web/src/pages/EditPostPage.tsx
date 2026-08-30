@@ -1,33 +1,14 @@
-import { useEffect } from "react";
-import { Link, useNavigate, useParams } from "react-router";
+import {Link, useNavigate, useOutletContext, useParams} from "react-router";
+import {useEffect} from "react";
 
-import PostEditForm from "../components/PostEditForm";
-import type { UsePostsReturn } from "../hooks/usePosts";
+import type {UsePostsReturn} from "../hooks/usePosts.ts";
+import {parsePostId} from "../router/parsePostId.ts";
+import PostEditForm from "../components/PostEditForm.tsx";
 
-type EditPostPageProps = {
-  postsState: UsePostsReturn;
-};
+const EditPostPage = () => {
+  const postState = useOutletContext<UsePostsReturn>();
 
-const parsePostId = (
-  postIdParam: string | undefined,
-) => {
-  if (postIdParam === undefined) {
-    return null;
-  }
-
-  const postId = Number(postIdParam);
-
-  if (!Number.isInteger(postId) || postId <= 0) {
-    return null;
-  }
-
-  return postId;
-};
-
-const EditPostPage = ({
-                        postsState,
-                      }: EditPostPageProps) => {
-  const { postId: postIdParam } = useParams();
+  const {postId: postIdParam} = useParams();
   const navigate = useNavigate();
 
   const postId = parsePostId(postIdParam);
@@ -41,8 +22,8 @@ const EditPostPage = ({
     changeEditForm,
     fetchPostDetail,
     submitUpdatePost,
-    submitDeletePost,
-  } = postsState;
+    submitDeletePost
+  } = postState;
 
   useEffect(() => {
     if (postId === null) {
@@ -51,6 +32,7 @@ const EditPostPage = ({
 
     void fetchPostDetail(postId);
   }, [postId, fetchPostDetail]);
+
 
   const handleSubmitUpdate = async () => {
     const updatedPost = await submitUpdatePost();
@@ -64,7 +46,7 @@ const EditPostPage = ({
     const isDeleted = await submitDeletePost();
 
     if (isDeleted) {
-      navigate("/posts");
+      navigate('/posts');
     }
   };
 
@@ -137,14 +119,11 @@ const EditPostPage = ({
       isSubmittingEdit={isSubmittingEdit}
       isDeleting={isDeleting}
       onChangeForm={changeEditForm}
-      onSubmitUpdate={() =>
-        void handleSubmitUpdate()
-      }
-      onSubmitDelete={() =>
-        void handleSubmitDelete()
-      }
+      onSubmitUpdate={() => void handleSubmitUpdate()}
+      onSubmitDelete={() => void handleSubmitDelete()}
     />
   );
+
 };
 
 export default EditPostPage;
