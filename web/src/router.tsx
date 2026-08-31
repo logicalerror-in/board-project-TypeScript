@@ -6,6 +6,8 @@ import NewPostPage from "./pages/NewPostPage.tsx";
 import PostDetailPage from "./pages/PostDetailPage.tsx";
 import EditPostPage from "./pages/EditPostPage.tsx";
 import {postListLoader} from "./router/postListLoader.ts";
+import {postLoader} from "./router/postLoader.ts";
+import PostRouteError from "./components/PostRouteError.tsx";
 
 const NotFoundPage = () => {
   return (
@@ -49,11 +51,15 @@ export const router = createBrowserRouter([
       },
       {
         path: "posts/:postId",
+        loader: postLoader,
         element: <PostDetailPage/>,
+        errorElement: <PostRouteError/>,
       },
       {
         path: "posts/:postId/edit",
+        loader: postLoader,
         element: <EditPostPage/>,
+        errorElement: <PostRouteError/>,
       },
       {
         path: "*",

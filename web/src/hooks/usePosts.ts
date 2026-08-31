@@ -1,28 +1,21 @@
 import {useCallback, useState} from "react";
-import type {ApiState} from "../api/apiState.ts";
-import type {CreatePostRequest, PostDetailResponse, UpdatePostRequest} from "../types/posts.ts";
+import type {CreatePostRequest, UpdatePostRequest} from "../types/posts.ts";
 import {
   hasPostFormErrors,
   type PostFormErrors,
   validateCreatePostForm,
   validateUpdatePostForm
 } from "../validation/postsValidation.ts";
-import {createPost, deletePost, getPost, updatePost} from "../api/postsApi.ts";
+import {createPost, deletePost, updatePost} from "../api/postsApi.ts";
 
 export const usePosts = () => {
-  const [postDetailState, setPostDetailState] = useState<ApiState<PostDetailResponse>>({status: "idle"});
   const [createForm, setCreateForm] = useState<CreatePostRequest>({title: '', content: ''});
-  const [editForm, setEditForm] = useState<UpdatePostRequest>({title: '', content: ''});
   const [createFormErrors, setCreateFormErrors] = useState<PostFormErrors>({});
   const [editFormErrors, setEditFormErrors] = useState<PostFormErrors>({});
   const [isSubmittingCreate, setIsSubmittingCreate] = useState(false);
   const [isSubmittingEdit, setIsSubmittingEdit] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [message, setMessage] = useState("");
-
-  const selectedPost = postDetailState.status === 'success'
-    ? postDetailState.data
-    : null;
 
   const getErrorMessage = useCallback(
     (error: unknown, fallbackMessage: string) => {
@@ -31,64 +24,11 @@ export const usePosts = () => {
         : fallbackMessage;
     }, []);
 
-  const clearEditForm = useCallback(
-    () => {
-      setEditForm({
-        title: '',
-        content: '',
-      });
-      setEditFormErrors({});
-    }, []);
-
-  const syncEditFormWithPost = useCallback(
-    (post: PostDetailResponse) => {
-      setEditForm({
-        title: post.title,
-        content: post.content,
-      });
-      setEditFormErrors({});
-    }, []);
-
   const changeCreateForm = useCallback(
     (form: CreatePostRequest) => {
       setCreateForm(form);
       setCreateFormErrors({});
     }, []);
-
-  const changeEditForm = useCallback(
-    (form: UpdatePostRequest) => {
-      setEditForm(form);
-      setEditFormErrors({});
-    }, []);
-
-  const fetchPostDetail = useCallback(
-    async (postId: number) => {
-      setPostDetailState({
-        status: "loading",
-      });
-      setMessage("");
-
-      try {
-        const data = await getPost(postId);
-        setPostDetailState({
-          status: "success",
-          data,
-        });
-        syncEditFormWithPost(data);
-      } catch (error) {
-        const errorMessage = getErrorMessage(
-          error,
-          '게시글 상세를 불러오지 못했습니다.'
-        );
-
-        setPostDetailState({
-          status: "error",
-          message: errorMessage
-        });
-        clearEditForm();
-        setMessage(errorMessage);
-      }
-    }, [clearEditForm, getErrorMessage, syncEditFormWithPost]);
 
   const submitCreatePost = async () => {
     const validationErrors = validateCreatePostForm(createForm);
@@ -105,7 +45,7 @@ export const usePosts = () => {
     setIsSubmittingCreate(true);
     setMessage('');
 
-    try{
+    try {
       const createdPost = await createPost(request);
       setCreateForm({
         title: "",
@@ -113,12 +53,9 @@ export const usePosts = () => {
       });
 
       setCreateFormErrors({});
-      syncEditFormWithPost(createdPost);
-      setPostDetailState({
-        status: "success",
-        data: createdPost,
-      });
       setMessage("게시글이 생성되었습니다.");
+
+      return createdPost;
     } catch (error) {
       setMessage(
         getErrorMessage(error, '게시글을 생성하지 못했습니다.')
@@ -129,17 +66,8 @@ export const usePosts = () => {
     }
   };
 
-  const submitUpdatePost = async () => {
-    if (selectedPost === null) {
-      setMessage(
-        "수정할 게시글을 먼저 선택해주세요.",
-      );
-
-      return null;
-    }
-
-    const validationErrors =
-      validateUpdatePostForm(editForm);
+  const submitUpdatePost = async (postId: number, editForm: UpdatePostRequest) => {
+    const validationErrors = validateUpdatePostForm(editForm);
 
     setEditFormErrors(validationErrors);
 
@@ -157,17 +85,11 @@ export const usePosts = () => {
 
     try {
       const updatedPost = await updatePost(
-        selectedPost.id,
+        postId,
         request,
       );
 
-      setPostDetailState({
-        status: "success",
-        data: updatedPost,
-      });
-
-      syncEditFormWithPost(updatedPost);
-
+      setEditFormErrors({});
       setMessage("게시글이 수정되었습니다.");
 
       return updatedPost;
@@ -185,15 +107,7 @@ export const usePosts = () => {
     }
   };
 
-  const submitDeletePost = async () => {
-    if (selectedPost === null) {
-      setMessage(
-        "삭제할 게시글을 먼저 선택해주세요.",
-      );
-
-      return false;
-    }
-
+  const submitDeletePost = async (postId: number) => {
     const shouldDelete = window.confirm(
       "정말 이 게시글을 삭제할까요?",
     );
@@ -202,19 +116,11 @@ export const usePosts = () => {
       return false;
     }
 
-    const postIdToDelete = selectedPost.id;
-
     setIsDeleting(true);
     setMessage("");
 
     try {
-      await deletePost(postIdToDelete);
-
-      setPostDetailState({
-        status: "idle",
-      });
-
-      clearEditForm();
+      await deletePost(postId);
 
       setMessage("게시글이 삭제되었습니다.");
 
@@ -234,13 +140,9 @@ export const usePosts = () => {
   };
 
   return {
-    postDetailState,
-
-    selectedPost,
-
     createForm,
-    editForm,
     createFormErrors,
+
     editFormErrors,
 
     isSubmittingCreate,
@@ -250,11 +152,11 @@ export const usePosts = () => {
     message,
 
     changeCreateForm,
-    changeEditForm,
 
-    fetchPostDetail,
     submitCreatePost,
     submitUpdatePost,
     submitDeletePost,
   };
 };
+
+export type UsePostsReturn = ReturnType<typeof usePosts>;
