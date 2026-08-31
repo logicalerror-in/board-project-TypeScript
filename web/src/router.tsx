@@ -5,6 +5,7 @@ import PostsPage from "./pages/PostsPage.tsx";
 import NewPostPage from "./pages/NewPostPage.tsx";
 import PostDetailPage from "./pages/PostDetailPage.tsx";
 import EditPostPage from "./pages/EditPostPage.tsx";
+import {postListLoader} from "./router/postListLoader.ts";
 
 const NotFoundPage = () => {
   return (
@@ -39,6 +40,7 @@ export const router = createBrowserRouter([
       },
       {
         path: "posts",
+        loader: postListLoader,
         element: <PostsPage/>,
       },
       {
