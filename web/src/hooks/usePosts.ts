@@ -1,18 +1,14 @@
 import {useCallback, useState} from "react";
-import type {CreatePostRequest, UpdatePostRequest} from "../types/posts.ts";
+import type {UpdatePostRequest} from "../types/posts.ts";
 import {
   hasPostFormErrors,
   type PostFormErrors,
-  validateCreatePostForm,
   validateUpdatePostForm
 } from "../validation/postsValidation.ts";
-import {createPost, deletePost, updatePost} from "../api/postsApi.ts";
+import {deletePost, updatePost} from "../api/postsApi.ts";
 
 export const usePosts = () => {
-  const [createForm, setCreateForm] = useState<CreatePostRequest>({title: '', content: ''});
-  const [createFormErrors, setCreateFormErrors] = useState<PostFormErrors>({});
   const [editFormErrors, setEditFormErrors] = useState<PostFormErrors>({});
-  const [isSubmittingCreate, setIsSubmittingCreate] = useState(false);
   const [isSubmittingEdit, setIsSubmittingEdit] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [message, setMessage] = useState("");
@@ -23,48 +19,6 @@ export const usePosts = () => {
         ? error.message
         : fallbackMessage;
     }, []);
-
-  const changeCreateForm = useCallback(
-    (form: CreatePostRequest) => {
-      setCreateForm(form);
-      setCreateFormErrors({});
-    }, []);
-
-  const submitCreatePost = async () => {
-    const validationErrors = validateCreatePostForm(createForm);
-    setCreateFormErrors(validationErrors);
-    if (hasPostFormErrors(validationErrors)) {
-      return null;
-    }
-
-    const request: CreatePostRequest = {
-      title: createForm.title.trim(),
-      content: createForm.content.trim(),
-    };
-
-    setIsSubmittingCreate(true);
-    setMessage('');
-
-    try {
-      const createdPost = await createPost(request);
-      setCreateForm({
-        title: "",
-        content: "",
-      });
-
-      setCreateFormErrors({});
-      setMessage("게시글이 생성되었습니다.");
-
-      return createdPost;
-    } catch (error) {
-      setMessage(
-        getErrorMessage(error, '게시글을 생성하지 못했습니다.')
-      );
-      return null;
-    } finally {
-      setIsSubmittingCreate(false);
-    }
-  };
 
   const submitUpdatePost = async (postId: number, editForm: UpdatePostRequest) => {
     const validationErrors = validateUpdatePostForm(editForm);
@@ -140,20 +94,13 @@ export const usePosts = () => {
   };
 
   return {
-    createForm,
-    createFormErrors,
-
     editFormErrors,
 
-    isSubmittingCreate,
     isSubmittingEdit,
     isDeleting,
 
     message,
 
-    changeCreateForm,
-
-    submitCreatePost,
     submitUpdatePost,
     submitDeletePost,
   };

@@ -8,6 +8,7 @@ import EditPostPage from "./pages/EditPostPage.tsx";
 import {postListLoader} from "./router/postListLoader.ts";
 import {postLoader} from "./router/postLoader.ts";
 import PostRouteError from "./components/PostRouteError.tsx";
+import {createPostAction} from "./router/createPostAction.ts";
 
 const NotFoundPage = () => {
   return (
@@ -47,6 +48,7 @@ export const router = createBrowserRouter([
       },
       {
         path: "posts/new",
+        action: createPostAction,
         element: <NewPostPage/>,
       },
       {

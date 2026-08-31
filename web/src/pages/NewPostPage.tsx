@@ -1,25 +1,28 @@
-import {useNavigate, useOutletContext} from "react-router";
-import type {UsePostsReturn} from "../hooks/usePosts.ts";
-import PostCreateForm from "../components/PostCreateForm.tsx";
+import {useState} from "react";
+import {useActionData, useNavigation,} from "react-router";
+
+import PostCreateForm from "../components/PostCreateForm";
+import {createPostAction} from "../router/createPostAction";
+import type {CreatePostRequest} from "../types/posts";
 
 const NewPostPage = () => {
-  const postState = useOutletContext<UsePostsReturn>();
-  const navigate = useNavigate();
+  const [form, setForm] = useState<CreatePostRequest>({
+    title: "",
+    content: "",
+  });
 
-  const handleSubmit = async () => {
-    const createdPost = await postState.submitCreatePost();
-    if (createdPost !== null) {
-      navigate(`/posts/${createdPost.id}`);
-    }
-  }
+  const actionData = useActionData<typeof createPostAction>();
+
+  const navigation = useNavigation();
+  const isSubmitting = navigation.state === "submitting";
 
   return (
     <PostCreateForm
-      form={postState.createForm}
-      errors={postState.createFormErrors}
-      isSubmittingCreate={postState.isSubmittingCreate}
-      onChangeForm={postState.changeCreateForm}
-      onSubmit={() => void handleSubmit()}
+      form={form}
+      errors={actionData?.errors ?? {}}
+      message={actionData?.message ?? null}
+      isSubmitting={isSubmitting}
+      onChangeForm={setForm}
     />
   );
 };
