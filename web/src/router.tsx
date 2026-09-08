@@ -9,6 +9,7 @@ import {postListLoader} from "./router/postListLoader.ts";
 import {postLoader} from "./router/postLoader.ts";
 import PostRouteError from "./components/PostRouteError.tsx";
 import {createPostAction} from "./router/createPostAction.ts";
+import {postAction} from "./router/postAction.ts";
 
 const NotFoundPage = () => {
   return (
@@ -60,6 +61,7 @@ export const router = createBrowserRouter([
       {
         path: "posts/:postId/edit",
         loader: postLoader,
+        action: postAction,
         element: <EditPostPage/>,
         errorElement: <PostRouteError/>,
       },

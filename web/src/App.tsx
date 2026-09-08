@@ -1,11 +1,6 @@
 import {Link, Outlet} from "react-router";
 
-import MessageBox from "./components/MessageBox";
-import { usePosts } from "./hooks/usePosts";
-
 const App = () => {
-  const postsState = usePosts();
-
   return (
     <main className="min-h-screen bg-slate-100 text-slate-900">
       <section className="mx-auto max-w-6xl px-6 py-10">
@@ -43,9 +38,7 @@ const App = () => {
           </div>
         </header>
 
-        <MessageBox message={postsState.message} />
-
-        <Outlet context={postsState} />
+        <Outlet/>
       </section>
     </main>
   );
