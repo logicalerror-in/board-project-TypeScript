@@ -1,57 +1,39 @@
-import {useLoaderData, useNavigate, useOutletContext} from "react-router";
+import type {PostDetailResponse, UpdatePostRequest} from "../types/posts.ts";
 import {useState} from "react";
-
+import {useActionData, useLoaderData, useNavigation} from "react-router";
+import type {postAction} from "../router/postAction.ts";
 import PostEditForm from "../components/PostEditForm.tsx";
 import type {postLoader} from "../router/postLoader.ts";
-import type {PostDetailResponse, UpdatePostRequest} from "../types/posts.ts";
-import type { UsePostsReturn } from "../hooks/usePosts";
 
-type EditPostContentProps = {
+type EditPostPageContentProps = {
   post: PostDetailResponse;
 };
 
-const EditPostContent = ({post}: EditPostContentProps) => {
-  const navigate = useNavigate();
+const EditPostContent = ({post,}: EditPostPageContentProps) => {
+  const navigation = useNavigation();
+  const actionData = useActionData<typeof postAction>();
 
   const [editForm, setEditForm] = useState<UpdatePostRequest>(
     () => ({
       title: post.title,
-      content: post.content,
+      content: post.content
     })
   );
 
-  const postsState = useOutletContext<UsePostsReturn>();
-  const {
-    editFormErrors,
-    isSubmittingEdit,
-    isDeleting,
-    submitUpdatePost,
-    submitDeletePost,
-  } = postsState;
-
-  const handleSubmitUpdate = async () => {
-    const updatedPost = await submitUpdatePost(post.id, editForm);
-    if (updatedPost !== null) {
-      navigate(`/posts/${updatedPost.id}`);
-    }
-  };
-
-  const handleSubmitDelete = async () => {
-    const isDeleted = await submitDeletePost(post.id);
-    if (isDeleted) {
-      navigate('/posts');
-    }
-  };
+  const submittingIntent = navigation.formData?.get('intent');
+  const isSubmittingEdit =
+    (navigation.state === 'submitting') && (submittingIntent === 'update');
+  const isDeleting =
+    (navigation.state === 'submitting') && (submittingIntent === 'delete');
 
   return (
     <PostEditForm
       form={editForm}
-      errors={editFormErrors}
+      errors={actionData?.errors ?? {}}
+      message={actionData?.message ?? null}
       isSubmittingEdit={isSubmittingEdit}
       isDeleting={isDeleting}
       onChangeForm={setEditForm}
-      onSubmitUpdate={() => void handleSubmitUpdate()}
-      onSubmitDelete={() => void handleSubmitDelete()}
     />
   );
 };
@@ -65,6 +47,6 @@ const EditPostPage = () => {
       post={post}
     />
   );
-}
+};
 
 export default EditPostPage;

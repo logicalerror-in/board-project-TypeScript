@@ -4,12 +4,11 @@ import type { PostListItemResponse } from "../types/posts";
 
 type PostListProps = {
   posts: PostListItemResponse[];
-  selectedPostId: number | null;
   isRefreshing: boolean;
   onRefresh: () => void;
 };
 
-const PostList = ({posts, selectedPostId, isRefreshing, onRefresh,}: PostListProps) => {
+const PostList = ({posts, isRefreshing, onRefresh,}: PostListProps) => {
   return (
     <section className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
       <div className="flex items-center justify-between gap-4">
@@ -46,11 +45,7 @@ const PostList = ({posts, selectedPostId, isRefreshing, onRefresh,}: PostListPro
           <Link
             key={post.id}
             to={`/posts/${post.id}`}
-            className={`block w-full rounded-xl border p-4 text-left transition hover:bg-slate-50 ${
-              selectedPostId === post.id
-                ? "border-blue-300 bg-blue-50"
-                : "border-slate-200 bg-white"
-            }`}
+            className="block w-full rounded-xl border border-slate-200 bg-white p-4 text-left transition hover:bg-slate-50"
           >
             <p className="text-sm text-slate-500">
               #{post.id}
