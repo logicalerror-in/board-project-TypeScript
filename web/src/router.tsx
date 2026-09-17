@@ -10,6 +10,12 @@ import {postLoader} from "./router/postLoader.ts";
 import PostRouteError from "./components/PostRouteError.tsx";
 import {createPostAction} from "./router/createPostAction.ts";
 import {postAction} from "./router/postAction.ts";
+import {announceListLoader} from "./router/announceListLoader.ts";
+import AnnounceListPage from "./pages/AnnounceListPage.tsx";
+import {announceLoader} from "./router/announceLoader.ts";
+import AnnounceDetailPage from "./pages/AnnounceDetailPage.tsx";
+import {createAnnounceAction} from "./router/createAnnounceAction.ts";
+import NewAnnouncePage from "./pages/NewAnnouncePage.tsx";
 
 const NotFoundPage = () => {
   return (
@@ -64,6 +70,22 @@ export const router = createBrowserRouter([
         action: postAction,
         element: <EditPostPage/>,
         errorElement: <PostRouteError/>,
+      },
+      {
+        path: "announcements",
+        loader: announceListLoader,
+        element: <AnnounceListPage />,
+      },
+      {
+        path: "announcements/new",
+        action: createAnnounceAction,
+        element: <NewAnnouncePage />,
+      },
+      {
+        path:
+          "announcements/:announcementId",
+        loader: announceLoader,
+        element: <AnnounceDetailPage />,
       },
       {
         path: "*",
