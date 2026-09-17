@@ -34,6 +34,13 @@ const App = () => {
               >
                 새 게시글
               </Link>
+
+              <Link
+                to="/announcements"
+                className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium hover:bg-slate-50"
+              >
+                공지사항
+              </Link>
             </nav>
           </div>
         </header>

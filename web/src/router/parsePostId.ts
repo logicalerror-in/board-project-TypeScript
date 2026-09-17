@@ -1,6 +1,4 @@
-export const parsePostId = (
-  postIdParam: string | undefined,
-) => {
+export const parsePostId = (postIdParam: string | undefined,) => {
   if (postIdParam === undefined) {
     return null;
   }
