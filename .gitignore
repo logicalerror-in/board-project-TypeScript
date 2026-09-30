@@ -16,6 +16,7 @@ yarn-debug.log*
 .env
 .env.*
 !.env.example
+cookie.txt
 
 # OS / editor
 .DS_Store

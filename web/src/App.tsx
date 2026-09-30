@@ -1,54 +1,59 @@
-import {Link, Outlet} from "react-router";
+import {useAppDispatch, useAppSelector} from "./store/hooks.ts";
+import {Link, Outlet, useNavigate} from "react-router";
+import {logout} from "./api/authApi.ts";
+import {clearUser} from "./store/authSlice.ts";
 
-const App = () => {
+export const App = () => {
+  const user = useAppSelector(
+    (state) => state.auth.user,
+  );
+
+  const dispatch = useAppDispatch();
+
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      dispatch(clearUser());
+      navigate("/posts");
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
   return (
-    <main className="min-h-screen bg-slate-100 text-slate-900">
-      <section className="mx-auto max-w-6xl px-6 py-10">
-        <header className="mb-8">
-          <p className="text-sm font-semibold text-blue-600">
-            Board Project
-          </p>
+    <>
+      <header>
+        <nav>
+          <Link to="/posts">
+            게시글
+          </Link>
 
-          <div className="mt-2 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <h1 className="text-3xl font-bold tracking-tight">
-                게시판 라우팅
-              </h1>
+          {user === null ? (
+            <Link to="/login">
+              로그인
+            </Link>
+          ) : (
+            <>
+              <span>
+                {user.id}
+              </span>
 
-              <p className="mt-3 text-base text-slate-600">
-                React Router로 URL과 게시글 화면을 연결합니다.
-              </p>
-            </div>
-
-            <nav className="flex flex-wrap gap-2">
-              <Link
-                to="/posts"
-                className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium hover:bg-slate-50"
+              <button
+                type="button"
+                onClick={() => {
+                  void handleLogout();
+                }}
               >
-                게시글 목록
-              </Link>
+                로그아웃
+              </button>
+            </>
+          )}
+        </nav>
+      </header>
 
-              <Link
-                to="/posts/new"
-                className="rounded-lg bg-blue-600 px-3 py-2 text-sm font-semibold text-white hover:bg-blue-700"
-              >
-                새 게시글
-              </Link>
-
-              <Link
-                to="/announcements"
-                className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium hover:bg-slate-50"
-              >
-                공지사항
-              </Link>
-            </nav>
-          </div>
-        </header>
-
-        <Outlet/>
-      </section>
-    </main>
+      <Outlet />
+    </>
   );
 };
-
-export default App;
