@@ -1,6 +1,5 @@
 import {createBrowserRouter, Link, Navigate} from "react-router";
 
-import App from "./App.tsx";
 import PostsPage from "./pages/PostsPage.tsx";
 import NewPostPage from "./pages/NewPostPage.tsx";
 import PostDetailPage from "./pages/PostDetailPage.tsx";
@@ -16,6 +15,10 @@ import {announceLoader} from "./router/announceLoader.ts";
 import AnnounceDetailPage from "./pages/AnnounceDetailPage.tsx";
 import {createAnnounceAction} from "./router/createAnnounceAction.ts";
 import NewAnnouncePage from "./pages/NewAnnouncePage.tsx";
+import {loginAction} from "./router/loginAction.ts";
+import {LoginPage} from "./pages/LoginPage.tsx";
+import {authLoader} from "./router/authLoader.ts";
+import {App} from "./App.tsx";
 
 const NotFoundPage = () => {
   return (
@@ -42,6 +45,7 @@ const NotFoundPage = () => {
 export const router = createBrowserRouter([
   {
     path: "/",
+    loader: authLoader,
     element: <App/>,
     children: [
       {
@@ -90,6 +94,11 @@ export const router = createBrowserRouter([
       {
         path: "*",
         element: <NotFoundPage/>,
+      },
+      {
+        path: 'login',
+        action: loginAction,
+        element: <LoginPage/>
       },
     ],
   },
